@@ -1,0 +1,11 @@
+# Bỏ qua tài liệu nghiên cứu đề cương (Bảo mật tài liệu NCKH)
+Document/
+Document/*
+
+# Bỏ qua file hệ thống Mac
+.DS_Store
+*/.DS_Store
+
+# Bỏ qua node_modules và file tạm
+node_modules/
+*.log

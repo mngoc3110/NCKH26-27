@@ -1,0 +1,20 @@
+{
+  "name": "colormind-asd-research",
+  "version": "1.0.0",
+  "description": "Ứng dụng trò chơi mã màu hỗ trợ phát triển nhận thức cho trẻ rối loạn phổ tự kỷ (Khoa Giáo dục Đặc biệt - Đề tài NCKH 2026-2027)",
+  "scripts": {
+    "dev": "npx -y serve . -l 3000",
+    "start": "npx -y serve . -l 3000"
+  },
+  "keywords": [
+    "autism",
+    "asd",
+    "color-coding",
+    "special-education",
+    "cognitive-development",
+    "research",
+    "spss"
+  ],
+  "author": "Khoa Giáo Dục Đặc Biệt & Ban Cố Vấn CNTT",
+  "license": "MIT"
+}

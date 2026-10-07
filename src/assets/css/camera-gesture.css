@@ -1,0 +1,233 @@
+/* ==========================================================================
+   COLORMIND ASD - TANGIBLE OBJECT & HAND COLOR RECOGNITION (TUI)
+   Nhận diện Bàn tay cầm Khối Mã Màu thực tế bên ngoài - Không cần chạm màn hình
+   Loại bỏ hoàn toàn con trỏ trôi lung tung và kháng 100% quạt máy/khuôn mặt
+   ========================================================================== */
+
+/* Nút Bật/Tắt Camera trên thanh công cụ */
+.camera-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface);
+  border: 2px solid var(--border-color);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.camera-toggle-btn.active {
+  background: #EFF6FF;
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.2);
+}
+
+/* CỬA SỔ QUÉT VẬT THỂ & CAMERA HUD (TANGIBLE SCAN PORTAL) */
+.tangible-portal-overlay {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 290px;
+  background: #FFFFFF;
+  border-radius: var(--radius-xl);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.18);
+  border: 3px solid var(--primary);
+  overflow: hidden;
+  z-index: 1000;
+  animation: modal-pop 0.3s ease-out;
+}
+
+.tangible-portal-overlay.active {
+  display: block;
+}
+
+.portal-header {
+  background: #1E293B;
+  color: #FFFFFF;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.portal-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.portal-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22C55E;
+  animation: pulse-dot 1.2s infinite alternate;
+}
+
+.portal-close-btn {
+  background: none;
+  border: none;
+  color: #94A3B8;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+.portal-close-btn:hover { color: #FFFFFF; }
+
+/* Khu vực Video Camera có Khung Mục Tiêu (Target Crosshair) */
+.portal-video-wrapper {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  background: #0F172A;
+  overflow: hidden;
+}
+
+.portal-video-elem {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* Gương */
+}
+
+.portal-canvas-elem {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(-1);
+  pointer-events: none;
+}
+
+/* Vùng tâm ngắm giơ khối màu (Scan Crosshair Target) */
+.scan-target-box {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 110px;
+  height: 110px;
+  border: 3px dashed rgba(255, 255, 255, 0.8);
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.35); /* Làm mờ xung quanh để tập trung vào tâm */
+  transition: all 0.2s ease;
+}
+
+.scan-target-box.locked {
+  border-color: var(--detected-color-hex, #22C55E);
+  border-style: solid;
+  border-width: 4px;
+  box-shadow: 0 0 20px var(--detected-color-hex, #22C55E), 0 0 0 9999px rgba(15, 23, 42, 0.4);
+  transform: translate(-50%, -50%) scale(1.06);
+}
+
+.scan-target-hint {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  text-align: center;
+  padding: 4px;
+}
+
+/* Bảng trạng thái nhận diện phía dưới */
+.portal-status-bar {
+  padding: 12px 14px;
+  background: #F8FAFC;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detected-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: #FFFFFF;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-full);
+}
+
+.detected-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.detected-color-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--text-main);
+}
+
+.color-preview-circle {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #CBD5E1;
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* Thanh tiến trình giữ vật thể để nộp bài (Hold to Submit Progress Bar) */
+.portal-progress-container {
+  width: 100%;
+  height: 8px;
+  background: #E2E8F0;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.portal-progress-bar {
+  width: 0%;
+  height: 100%;
+  background: #22C55E;
+  transition: width 0.1s linear;
+}
+
+/* Banner hướng dẫn lớn trên màn hình chính */
+.tangible-guide-banner {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #FEF3C7;
+  border: 2px solid #FDE68A;
+  color: #92400E;
+  padding: 12px 24px;
+  border-radius: var(--radius-full);
+  font-size: 1rem;
+  font-weight: 800;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+  animation: bounce-gentle 2s infinite alternate ease-in-out;
+}
+
+.tangible-guide-banner.show {
+  display: flex;
+}
+
+@keyframes bounce-gentle {
+  from { transform: translateY(0); }
+  to { transform: translateY(-4px); }
+}
+
+.tangible-guide-icon {
+  font-size: 1.5rem;
+}

@@ -1,0 +1,20 @@
+{
+  "name": "ColorMind ASD - Trò Chơi Mã Màu Nhận Thức",
+  "short_name": "ColorMind",
+  "description": "Ứng dụng trò chơi mã màu hỗ trợ phát triển nhận thức cho trẻ rối loạn phổ tự kỷ 5-6 tuổi (Khoa GDĐB)",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#F8FAFC",
+  "theme_color": "#2563EB",
+  "categories": ["education", "kids", "health"],
+  "icons": [
+    {
+      "src": "./src/assets/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

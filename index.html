@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ColorMind ASD - Trò Chơi Mã Màu Hỗ Trợ Nhận Thức (NCKH GDĐB)</title>
+  
+  <!-- Cấu hình PWA & Biểu Tượng Ứng Dụng -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563EB">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ColorMind ASD">
+  <link rel="apple-touch-icon" href="src/assets/icons/icon.svg">
+  <link rel="icon" type="image/svg+xml" href="src/assets/icons/icon.svg">
+
+  <!-- Google Fonts: Quicksand & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Quicksand:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Modular Design System Stylesheets -->
+  <link rel="stylesheet" href="src/assets/css/main.css">
+  <link rel="stylesheet" href="src/assets/css/components.css">
+  <link rel="stylesheet" href="src/assets/css/child-view.css">
+  <link rel="stylesheet" href="src/assets/css/teacher-portal.css">
+  <link rel="stylesheet" href="src/assets/css/camera-gesture.css">
+</head>
+<body>
+  <div id="app" class="app-container">
+    
+    <!-- TOP NAVIGATION BAR -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-logo">
+          <span class="logo-dot dot-blue"></span>
+          <span class="logo-dot dot-yellow"></span>
+          <span class="logo-dot dot-green"></span>
+        </div>
+        <div class="brand-info">
+          <h1 class="brand-title">ColorMind ASD</h1>
+          <span class="brand-sub">Hệ Thống Trò Chơi Mã Màu Nhận Thức • NCKH GDĐB</span>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <!-- Chế độ hoạt động badge -->
+        <div class="mode-badge" id="currentModeBadge">
+          <span class="badge-dot pulse"></span>
+          <span id="modeBadgeText">Chế độ Can thiệp: Trẻ 5–6 Tuổi</span>
+        </div>
+
+        <!-- Nút Cài đặt ứng dụng PWA -->
+        <button id="installAppBtn" class="btn btn-outline" style="border-color: var(--primary); color: var(--primary);" title="Cài đặt thành ứng dụng trên iPad / Máy tính bảng / Mac">
+          <span class="icon">📲</span>
+          <span>Cài Đặt App</span>
+        </button>
+
+        <!-- Nút chuyển đổi Trẻ <-> Giáo viên -->
+        <button id="toggleRoleBtn" class="btn btn-secondary btn-switch" title="Chuyển sang Chế độ Giáo viên / Quản trị">
+          <span class="icon">👩‍🏫</span>
+          <span id="roleBtnText">Cổng Giáo Viên</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ========================================== -->
+    <!-- 1. CHẾ ĐỘ TRẺ EM (CHILD PLAY INTERFACE)    -->
+    <!-- ========================================== -->
+    <main id="childView" class="view-section active">
+      
+      <!-- Thanh công cụ can thiệp sư phạm dành cho trẻ & trợ giảng -->
+      <section class="child-subbar">
+        <div class="child-profile-pill">
+          <span class="pill-avatar">🧒</span>
+          <span class="pill-label">Mã trẻ:</span>
+          <strong id="activeChildIdDisplay">ASD-01 (Bé Nam)</strong>
+        </div>
+
+        <!-- Mức độ gợi ý mã màu (Prompt Scaffolding Level) -->
+        <div class="scaffolding-picker">
+          <span class="picker-label">Mức hỗ trợ mã màu:</span>
+          <div class="pill-group">
+            <button class="pill-btn active" data-prompt-level="1" id="promptLvl1Btn" title="Viền màu sáng + Hiệu ứng nhịp điệu">
+              L1: Gợi ý rõ (Full)
+            </button>
+            <button class="pill-btn" data-prompt-level="2" id="promptLvl2Btn" title="Viền màu tĩnh định hướng">
+              L2: Tín hiệu tĩnh
+            </button>
+            <button class="pill-btn" data-prompt-level="3" id="promptLvl3Btn" title="Làm mờ gợi ý / Trẻ tự lực">
+              L3: Tự lập (Faded)
+            </button>
+          </div>
+        </div>
+
+        <!-- Nút Tùy chọn Bật/Tắt Quét Khối Màu Thực Tế Trên Tay -->
+        <button id="cameraToggleBtn" class="camera-toggle-btn" title="Chế độ quét khối mã màu thực tế trên tay (Tangible AI)">
+          <span>📷</span>
+          <span>Quét Khối Màu (Tangible AI)</span>
+        </button>
+
+        <!-- Âm thanh mẫu & Hướng dẫn lại -->
+        <div class="audio-feedback-controls">
+          <button id="replayInstructionBtn" class="btn btn-icon" title="Nghe lại tín hiệu âm thanh">
+            🔊 Hướng dẫn
+          </button>
+        </div>
+      </section>
+
+      <!-- Thanh chọn nhiệm vụ nhận thức (3 Game Module) -->
+      <nav class="game-tabs-container">
+        <button class="game-tab active" data-game="matching" id="tabMatching">
+          <span class="tab-emoji">🎯</span>
+          <div class="tab-meta">
+            <span class="tab-title">1. Ghép Cặp Tương Đồng</span>
+            <span class="tab-desc">Mã màu định hướng đối tượng</span>
+          </div>
+        </button>
+
+        <button class="game-tab" data-game="sorting" id="tabSorting">
+          <span class="tab-emoji">🧺</span>
+          <div class="tab-meta">
+            <span class="tab-title">2. Phân Loại Danh Mục</span>
+            <span class="tab-desc">Quy ước mã màu theo khay</span>
+          </div>
+        </button>
+
+        <button class="game-tab" data-game="sequence" id="tabSequence">
+          <span class="tab-emoji">🧩</span>
+          <div class="tab-meta">
+            <span class="tab-title">3. Chuỗi Trí Nhớ Màu</span>
+            <span class="tab-desc">Ghi nhớ quy luật thứ tự</span>
+          </div>
+        </button>
+      </nav>
+
+      <!-- KHÔNG GIAN BÀI HỌC TƯƠNG TÁC (GAME ARENA) -->
+      <section class="game-arena" id="gameArena">
+        
+        <!-- Banner hướng dẫn chế độ vật thể thực tế -->
+        <div id="tangibleGuideBanner" class="tangible-guide-banner">
+          <span class="tangible-guide-icon">🧸</span>
+          <span><strong>Chế độ Khối Màu Thực Tế:</strong> Bé chỉ cần nhặt Khối màu / Thẻ màu bên ngoài giơ vào ô ngắm camera để trả lời!</span>
+        </div>
+
+        <!-- Hướng dẫn thị giác ngắn gọn -->
+        <div class="visual-instruction-bar" id="visualInstruction">
+          <span class="instruction-icon">👉</span>
+          <span class="instruction-text" id="instructionText">Hãy ghép hình có cùng mã màu vào ô tương ứng nhé!</span>
+        </div>
+
+        <!-- MÀN CHƠI 1: GHÉP CẶP TƯƠNG ĐỒNG (MATCHING) -->
+        <div class="game-stage active" id="stageMatching">
+          <div class="stage-prompt-box">
+            <div class="target-card-area">
+              <span class="sub-heading">Hình mẫu cần ghép:</span>
+              <div class="card-display target-card" id="matchTargetCard">
+                <span class="card-img-placeholder" id="matchTargetImg">🍎</span>
+                <span class="card-name" id="matchTargetName">Quả Táo</span>
+                <div class="color-badge-indicator" id="matchTargetColorTag"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="options-container-area">
+            <span class="sub-heading">Bé chọn hình đúng:</span>
+            <div class="cards-grid" id="matchingOptionsGrid">
+              <!-- Render động các thẻ -->
+            </div>
+          </div>
+        </div>
+
+        <!-- MÀN CHƠI 2: PHÂN LOẠI DANH MỤC (SORTING) -->
+        <div class="game-stage" id="stageSorting">
+          <!-- Các khay đích (Target Baskets) mã màu -->
+          <div class="baskets-grid" id="sortingBasketsGrid">
+            <!-- Render động các khay đích theo cấu hình của cô -->
+          </div>
+
+          <!-- Khu vực vật phẩm cần phân loại -->
+          <div class="sorting-item-stage">
+            <span class="sub-heading">Vật phẩm đang chờ phân loại:</span>
+            <div class="current-sorting-card" id="currentSortingCard">
+              <span class="card-img-placeholder" id="sortingItemImg">🚗</span>
+              <span class="card-name" id="sortingItemName">Ô tô</span>
+              <div class="color-badge-indicator" id="sortingItemColorTag"></div>
+            </div>
+            <p class="sorting-hint-text">Chạm vào Khay đích có màu tương ứng để xếp đồ vật vào nhé!</p>
+          </div>
+        </div>
+
+        <!-- MÀN CHƠI 3: CHUỖI TRÍ NHỚ MÀU (SEQUENCE) -->
+        <div class="game-stage" id="stageSequence">
+          <div class="sequence-instruction">
+            <span class="sub-heading">Quan sát nhịp sáng mã màu rồi bấm lại theo đúng thứ tự:</span>
+            <button id="startSequenceBtn" class="btn btn-primary btn-play-seq">▶ Bắt đầu chiếu mẫu</button>
+          </div>
+
+          <!-- Hàng hiển thị chuỗi mẫu -->
+          <div class="sequence-preview-row" id="sequencePreviewRow">
+            <!-- Ô chuỗi mẫu -->
+          </div>
+
+          <!-- Các nút phản hồi của trẻ -->
+          <div class="sequence-input-row" id="sequenceInputRow">
+            <!-- Nút bấm màu -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Phản hồi tích cực (Success Reinforcement Modal / Overlay) -->
+      <div class="celebration-overlay" id="celebrationOverlay">
+        <div class="celebration-card">
+          <div class="star-animation">⭐ 🌟 ⭐</div>
+          <h2 class="celebration-title">Bé Làm Giỏi Lắm!</h2>
+          <p class="celebration-text" id="celebrationSubtext">Đã ghép đúng đối tượng theo mã màu!</p>
+          <button id="nextCardBtn" class="btn btn-success btn-lg">Bài tiếp theo ➔</button>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ========================================== -->
+    <!-- 2. CỔNG GIÁO VIÊN & NCKH (TEACHER PORTAL)  -->
+    <!-- ========================================== -->
+    <main id="teacherView" class="view-section">
+      <div class="teacher-portal-layout">
+        
+        <!-- Sidebar điều hướng của giáo viên -->
+        <aside class="teacher-sidebar">
+          <div class="teacher-user-box">
+            <div class="teacher-avatar">👩‍🏫</div>
+            <div class="teacher-meta">
+              <strong id="teacherName">Cô Mai - GV GDĐB</strong>
+              <small>Trường Mầm Non Hòa Nhập</small>
+            </div>
+          </div>
+
+          <nav class="teacher-nav">
+            <button class="nav-item active" data-teacher-tab="content">
+              <span class="nav-icon">📚</span>
+              <span>Quản trị Học liệu (No-Code)</span>
+            </button>
+            <button class="nav-item" data-teacher-tab="colorRules">
+              <span class="nav-icon">🎨</span>
+              <span>Cấu hình Quy ước Mã màu</span>
+            </button>
+            <button class="nav-item" data-teacher-tab="scaffolding">
+              <span class="nav-icon">⏱️</span>
+              <span>Quy tắc Hỗ trợ & Fading</span>
+            </button>
+            <button class="nav-item" data-teacher-tab="analytics">
+              <span class="nav-icon">📊</span>
+              <span>Dữ liệu Thực nghiệm (SPSS)</span>
+            </button>
+          </nav>
+
+          <div class="sidebar-footer">
+            <button id="returnToChildBtn" class="btn btn-primary btn-block">
+              ◀ Trở về Màn Trẻ Học
+            </button>
+          </div>
+        </aside>
+
+        <!-- Nội dung chính của Teacher Portal -->
+        <div class="teacher-content-pane">
+          
+          <!-- TAB 1: QUẢN TRỊ HỌC LIỆU NO-CODE -->
+          <section class="teacher-tab-panel active" id="tabPanelContent">
+            <div class="panel-header">
+              <div>
+                <h2>Kho Thẻ Học Liệu Sư Phạm</h2>
+                <p class="text-muted">Giáo viên hoàn toàn tự thêm, sửa ảnh chụp thực tế và từ vựng mà không cần nhờ IT sửa code.</p>
+              </div>
+              <div class="action-buttons">
+                <button id="exportExcelTemplateBtn" class="btn btn-outline" title="Tải file mẫu Excel">
+                  📄 Tải mẫu Excel
+                </button>
+                <button id="addNewCardBtn" class="btn btn-primary">
+                  ➕ Thêm Thẻ Học Liệu Mới
+                </button>
+              </div>
+            </div>
+
+            <!-- Bảng danh sách thẻ học liệu hiện có -->
+            <div class="data-table-card">
+              <table class="custom-table" id="cardsTable">
+                <thead>
+                  <tr>
+                    <th>Icon/Ảnh</th>
+                    <th>Tên vật phẩm</th>
+                    <th>Chủ đề / Nhóm</th>
+                    <th>Mã màu quy ước</th>
+                    <th>Mức độ khó</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="cardsTableBody">
+                  <!-- Render động -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Thống kê nhanh tính tự chủ -->
+            <div class="info-alert-box">
+              <div class="alert-icon">💡</div>
+              <div class="alert-body">
+                <strong>Tính độc lập của Khoa GDĐB:</strong>
+                Tất cả học liệu được lưu trữ trực tiếp trong bộ nhớ thiết bị của trường (Offline Storage) và đồng bộ qua JSON/Excel. Giáo viên có thể mang máy tính bảng đến bất kỳ trường hòa nhập nào để can thiệp mà không cần phụ thuộc mạng hay lập trình viên!
+              </div>
+            </div>
+          </section>
+
+          <!-- TAB 2: CẤU HÌNH QUY ƯỚC MÃ MÀU -->
+          <section class="teacher-tab-panel" id="tabPanelColorRules">
+            <div class="panel-header">
+              <div>
+                <h2>Bộ Cấu Hình Quy Ước Mã Màu Động</h2>
+                <p class="text-muted">Trao quyền cho giáo viên thiết lập ý nghĩa sư phạm của mã màu phù hợp với từng giai đoạn nghiên cứu.</p>
+              </div>
+              <button id="saveColorRulesBtn" class="btn btn-success">💾 Lưu Quy ước Mã Màu</button>
+            </div>
+
+            <!-- Chọn Preset Bảng màu -->
+            <div class="config-card">
+              <h3 class="config-card-title">1. Chọn Bộ Bảng Màu Thân Thiện Với Trẻ Tự Kỷ</h3>
+              <div class="palette-picker-grid">
+                <label class="palette-option active">
+                  <input type="radio" name="colorPalette" value="calmPastel" checked>
+                  <div class="palette-card-inner">
+                    <strong>Pastel Dịu Mắt (Khuyên dùng)</strong>
+                    <p>Giảm thiểu kích thích thị giác, chống quá tải cảm giác (sensory overload).</p>
+                    <div class="color-swatches">
+                      <span style="background: #60a5fa"></span>
+                      <span style="background: #facc15"></span>
+                      <span style="background: #4ade80"></span>
+                      <span style="background: #f87171"></span>
+                    </div>
+                  </div>
+                </label>
+
+                <label class="palette-option">
+                  <input type="radio" name="colorPalette" value="highContrast">
+                  <div class="palette-card-inner">
+                    <strong>Tương Phản Cao (High Contrast)</strong>
+                    <p>Dành cho trẻ có khó khăn về định hướng thị giác hoặc kém chú ý chi tiết.</p>
+                    <div class="color-swatches">
+                      <span style="background: #1d4ed8"></span>
+                      <span style="background: #eab308"></span>
+                      <span style="background: #15803d"></span>
+                      <span style="background: #b91c1c"></span>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Gán ý nghĩa mã màu -->
+            <div class="config-card">
+              <h3 class="config-card-title">2. Gán Ý Nghĩa Sư Phạm Cho Từng Mã Màu</h3>
+              <div class="color-meaning-list" id="colorMeaningList">
+                <!-- Render động các quy ước màu -->
+              </div>
+            </div>
+          </section>
+
+          <!-- TAB 3: QUY TẮC HỖ TRỢ & PROMPT FADING -->
+          <section class="teacher-tab-panel" id="tabPanelScaffolding">
+            <div class="panel-header">
+              <div>
+                <h2>Thiết Lập Quy Tắc Can Thiệp & Làm Mờ Gợi Ý (Prompt Fading)</h2>
+                <p class="text-muted">Cấu hình thời gian trễ và điều kiện kích hoạt trợ giúp mã màu cho từng cá nhân trẻ.</p>
+              </div>
+              <button id="saveScaffoldingBtn" class="btn btn-success">💾 Lưu Thiết Lập Can Thiệp</button>
+            </div>
+
+            <div class="config-card">
+              <h3 class="config-card-title">Thông số can thiệp sư phạm:</h3>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Thời gian chờ trước khi kích hoạt gợi ý mã màu (Delay):</label>
+                  <div class="input-with-unit">
+                    <input type="number" id="scaffoldDelayInput" value="5" min="1" max="15">
+                    <span>giây</span>
+                  </div>
+                  <small class="form-help">Nếu trẻ không chạm vào màn hình sau khoảng thời gian này, viền mã màu sẽ nhấp nháy định hướng.</small>
+                </div>
+
+                <div class="form-group">
+                  <label>Số lần chạm sai tối đa trước khi đưa ra gợi ý trực quan:</label>
+                  <div class="input-with-unit">
+                    <input type="number" id="scaffoldMaxErrorsInput" value="2" min="1" max="5">
+                    <span>lần</span>
+                  </div>
+                  <small class="form-help">Giúp trẻ tránh cảm giác thất bại, chuyển đổi sang bước hỗ trợ tiếp theo.</small>
+                </div>
+
+                <div class="form-group">
+                  <label>Tự động chuyển mức độ hỗ trợ (Auto Scaffolding):</label>
+                  <select id="autoFadingSelect" class="form-control">
+                    <option value="enabled">Bật - Tự mờ dần mã màu khi trẻ làm đúng 3 lần liên tiếp</option>
+                    <option value="manual">Tắt - Giáo viên tự chỉnh thủ công trên lớp</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- TAB 4: DỮ LIỆU THỰC NGHIỆM & XUẤT SPSS -->
+          <section class="teacher-tab-panel" id="tabPanelAnalytics">
+            <div class="panel-header">
+              <div>
+                <h2>Báo Cáo Nghiên Cứu & Trích Xuất Dữ Liệu SPSS</h2>
+                <p class="text-muted">Hệ thống tự động ghi nhật ký vi mô từng thao tác của trẻ để phục vụ phân tích định lượng NCKH.</p>
+              </div>
+              <div class="action-buttons">
+                <button id="exportCsvSpssBtn" class="btn btn-success" title="Xuất dữ liệu chuẩn định dạng SPSS">
+                  📥 Xuất File SPSS/Excel (1-Click)
+                </button>
+                <button id="clearLogsBtn" class="btn btn-outline" title="Xóa dữ liệu thử nghiệm">
+                  🗑️ Đặt lại dữ liệu
+                </button>
+              </div>
+            </div>
+
+            <!-- Thống kê tổng quan KPI nghiên cứu -->
+            <div class="kpi-cards-grid">
+              <div class="kpi-card">
+                <span class="kpi-label">Tổng lượt thử nghiệm</span>
+                <span class="kpi-val" id="kpiTotalTrials">0</span>
+                <span class="kpi-sub">Số lượt tương tác</span>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-label">Tỷ lệ chính xác trung bình</span>
+                <span class="kpi-val text-success" id="kpiAvgAccuracy">0%</span>
+                <span class="kpi-sub">Chính xác ở lần chạm 1</span>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-label">Thời gian phản hồi TB (RT)</span>
+                <span class="kpi-val text-primary" id="kpiAvgReaction">0s</span>
+                <span class="kpi-sub">Reaction Time</span>
+              </div>
+              <div class="kpi-card">
+                <span class="kpi-label">Tỷ lệ cần trợ giúp mã màu</span>
+                <span class="kpi-val text-warning" id="kpiHelpRate">0%</span>
+                <span class="kpi-sub">Sử dụng L1/L2</span>
+              </div>
+            </div>
+
+            <!-- Bảng dữ liệu thực nghiệm chi tiết chuẩn SPSS -->
+            <div class="data-table-card mt-4">
+              <div class="table-card-header">
+                <h3>Nhật ký thực nghiệm chi tiết (Log Data)</h3>
+                <span class="badge-tag">Đã mã hóa biến số sư phạm</span>
+              </div>
+              <div class="table-scroll-container">
+                <table class="custom-table" id="researchLogTable">
+                  <thead>
+                    <tr>
+                      <th>Phiên #</th>
+                      <th>Mã Trẻ (Child_ID)</th>
+                      <th>Nhiệm vụ (Task_Type)</th>
+                      <th>Mã màu (Color_Code)</th>
+                      <th>Cấp gợi ý (Prompt_Lvl)</th>
+                      <th>Thời gian phản hồi (RT_ms)</th>
+                      <th>Số lỗi (Error_Count)</th>
+                      <th>Kết quả (Outcome)</th>
+                      <th>Thời điểm (Timestamp)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="researchLogTableBody">
+                    <!-- Render động các dòng log -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </main>
+
+    <!-- CỬA SỔ QUÉT VẬT THỂ MÃ MÀU TRÊN TAY (TANGIBLE PORTAL) -->
+    <div id="tangiblePortalOverlay" class="tangible-portal-overlay">
+      <div class="portal-header">
+        <span class="portal-title">
+          <span class="portal-live-dot"></span>
+          <span>Quét Khối Mã Màu Trên Tay</span>
+        </span>
+        <button id="closePortalBtn" class="portal-close-btn" title="Đóng">&times;</button>
+      </div>
+      <div class="portal-video-wrapper">
+        <video id="portalVideoElem" class="portal-video-elem" playsinline autoplay muted></video>
+        <canvas id="portalCanvasElem" class="portal-canvas-elem"></canvas>
+        
+        <!-- Tâm ngắm giơ khối màu (Scan Crosshair) -->
+        <div id="scanTargetBox" class="scan-target-box">
+          <span class="scan-target-hint">Giơ khối màu vào đây</span>
+        </div>
+      </div>
+      
+      <!-- Thanh hiển thị trạng thái nhận diện -->
+      <div class="portal-status-bar">
+        <div class="detected-pill">
+          <span class="detected-label">Nhận diện:</span>
+          <span class="detected-color-tag">
+            <span id="detectedColorCircle" class="color-preview-circle"></span>
+            <span id="detectedColorText">Đang chờ khối màu...</span>
+          </span>
+        </div>
+        <div class="portal-progress-container">
+          <div id="portalProgressBar" class="portal-progress-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL THÊM/SỬA THẺ HỌC LIỆU -->
+    <div class="custom-modal" id="cardModal">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h3 id="cardModalTitle">Thêm Thẻ Học Liệu Mới</h3>
+          <button class="modal-close-btn" id="closeCardModalBtn">&times;</button>
+        </div>
+        <form id="cardForm" class="modal-body">
+          <div class="form-group">
+            <label>Tên đồ vật / Từ vựng:</label>
+            <input type="text" id="cardNameInput" class="form-control" placeholder="Ví dụ: Quả Chuối, Con Mèo, Chiếc Xe..." required>
+          </div>
+          
+          <div class="form-group">
+            <label>Biểu tượng hoặc Ảnh (Emoji / Ký tự minh họa):</label>
+            <input type="text" id="cardEmojiInput" class="form-control" placeholder="Ví dụ: 🍌 hoặc dán URL ảnh" required>
+          </div>
+
+          <div class="form-group">
+            <label>Chủ đề / Danh mục:</label>
+            <select id="cardCategorySelect" class="form-control">
+              <option value="fruit">Hoa quả (Trái cây)</option>
+              <option value="animal">Động vật (Thú cưng)</option>
+              <option value="vehicle">Phương tiện giao thông</option>
+              <option value="school">Đồ dùng học tập</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Mã màu quy ước sư phạm:</label>
+            <select id="cardColorSelect" class="form-control">
+              <option value="blue">Xanh Dương (#60A5FA)</option>
+              <option value="yellow">Vàng (#FACC15)</option>
+              <option value="green">Xanh Lá (#4ADE80)</option>
+              <option value="red">Đỏ Nhạt (#F87171)</option>
+            </select>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" id="cancelCardModalBtn">Hủy</button>
+            <button type="submit" class="btn btn-primary">Lưu Thẻ Bài</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Modular Scripts Architecture -->
+  <script src="src/core/state.js"></script>
+  <script src="src/core/audio-engine.js"></script>
+  <script src="src/core/color-system.js"></script>
+  <script src="src/core/pwa-installer.js"></script>
+  <script src="src/modules/research/research-logger.js"></script>
+  <script src="src/modules/games/matching-game.js"></script>
+  <script src="src/modules/games/sorting-game.js"></script>
+  <script src="src/modules/games/sequence-game.js"></script>
+  <script src="src/modules/teacher/content-manager.js"></script>
+  <script src="src/modules/teacher/rules-config.js"></script>
+  <script src="src/modules/teacher/spss-exporter.js"></script>
+  <!-- Google MediaPipe AI Hand Landmark Tracking -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <script src="src/modules/camera/camera-gesture.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>

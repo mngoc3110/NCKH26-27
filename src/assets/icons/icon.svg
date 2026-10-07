@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#EFF6FF"/>
+      <stop offset="100%" stop-color="#DBEAFE"/>
+    </linearGradient>
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#1E293B" flood-opacity="0.12"/>
+    </filter>
+  </defs>
+
+  <!-- Nền bo góc mềm mại -->
+  <rect width="512" height="512" rx="120" fill="url(#bgGrad)"/>
+  
+  <!-- Khung bảng can thiệp trung tâm -->
+  <rect x="56" y="56" width="400" height="400" rx="90" fill="#FFFFFF" filter="url(#softShadow)"/>
+
+  <!-- Biểu tượng 3 chấm tròn mã màu đại diện cho nhận thức (Xanh, Vàng, Xanh Lá) -->
+  <circle cx="180" cy="200" r="64" fill="#3B82F6"/>
+  <circle cx="332" cy="200" r="64" fill="#FACC15"/>
+  <circle cx="256" cy="326" r="64" fill="#22C55E"/>
+
+  <!-- Trái tim hoặc nụ cười thân thiện ở giữa -->
+  <path d="M 230 200 Q 256 225 282 200" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" fill="none"/>
+  
+  <!-- Chữ ASD biểu trưng -->
+  <text x="256" y="420" font-family="'Quicksand', 'Inter', sans-serif" font-size="34" font-weight="800" fill="#1E293B" text-anchor="middle" letter-spacing="2">COLORMIND</text>
+</svg>

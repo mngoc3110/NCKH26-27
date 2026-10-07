@@ -1,0 +1,387 @@
+/* ==========================================================================
+   COLORMIND ASD - CHILD INTERFACE STYLES (SENSORY-OPTIMIZED)
+   Thiết kế giao diện can thiệp cho trẻ tự kỷ 5-6 tuổi
+   ========================================================================== */
+
+/* THANH CÔNG CỤ CAN THIỆP SƯ PHẠM (SUBBAR) */
+.child-subbar {
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.child-profile-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-subtle);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.9rem;
+}
+
+.pill-avatar {
+  font-size: 1.2rem;
+}
+
+.pill-label {
+  color: var(--text-muted);
+}
+
+.scaffolding-picker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.picker-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.pill-group {
+  display: flex;
+  background: var(--bg-subtle);
+  padding: 3px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-color);
+}
+
+.pill-btn {
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.pill-btn.active {
+  background: var(--bg-surface);
+  color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+/* THANH TAB 3 TRÒ CHƠI NHẬN THỨC */
+.game-tabs-container {
+  display: flex;
+  gap: 12px;
+  padding: 14px 24px;
+  background: var(--bg-primary);
+  overflow-x: auto;
+}
+
+.game-tab {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-surface);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 12px 18px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: left;
+}
+
+.game-tab:hover {
+  border-color: var(--primary-soft);
+  transform: translateY(-1px);
+}
+
+.game-tab.active {
+  border-color: var(--primary);
+  background: #F0F7FF;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+}
+
+.tab-emoji {
+  font-size: 1.8rem;
+}
+
+.tab-title {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.tab-desc {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* KHÔNG GIAN BÀI HỌC (GAME ARENA) */
+.game-arena {
+  flex: 1;
+  padding: 16px 24px 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.visual-instruction-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #FEF9C3;
+  border: 1px solid #FEF08A;
+  color: #854D0E;
+  padding: 10px 20px;
+  border-radius: var(--radius-full);
+  margin-bottom: 24px;
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-sm);
+}
+
+.instruction-icon {
+  font-size: 1.25rem;
+}
+
+/* STAGES */
+.game-stage {
+  display: none;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+}
+
+.game-stage.active {
+  display: flex;
+}
+
+.sub-heading {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+/* MÀN 1: MATCHING GAME */
+.stage-prompt-box {
+  margin-bottom: 32px;
+}
+
+.target-card {
+  width: 160px;
+  height: 180px;
+  background: #FFFFFF;
+  pointer-events: none;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  width: 100%;
+  max-width: 650px;
+}
+
+.option-card {
+  height: 170px;
+  background: #FFFFFF;
+}
+
+.option-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* MÀN 2: SORTING GAME (PHÂN LOẠI) */
+.baskets-grid {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  width: 100%;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.sorting-basket {
+  flex: 1;
+  min-width: 180px;
+  max-width: 240px;
+  min-height: 160px;
+  border-radius: var(--radius-xl);
+  border: 4px dashed var(--basket-color, var(--code-blue));
+  background: var(--basket-bg, var(--code-blue-soft));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.sorting-basket:hover {
+  transform: scale(1.03);
+}
+
+.basket-icon {
+  font-size: 2.8rem;
+  margin-bottom: 6px;
+}
+
+.basket-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.basket-code-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+.current-sorting-card {
+  width: 150px;
+  height: 160px;
+  margin: 0 auto 16px auto;
+}
+
+.sorting-hint-text {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* MÀN 3: SEQUENCE GAME */
+.sequence-instruction {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.sequence-preview-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 36px;
+  min-height: 110px;
+  align-items: center;
+  justify-content: center;
+}
+
+.seq-slot {
+  width: 90px;
+  height: 100px;
+  border-radius: var(--radius-lg);
+  border: 3px solid var(--border-color);
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  transition: all var(--transition-normal);
+}
+
+.seq-slot.highlight {
+  transform: scale(1.15);
+  box-shadow: 0 0 25px currentColor;
+}
+
+.sequence-input-row {
+  display: flex;
+  gap: 18px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.seq-input-btn {
+  width: 100px;
+  height: 110px;
+  border-radius: var(--radius-lg);
+  border: 4px solid var(--seq-btn-color, #CBD5E1);
+  background: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.seq-input-btn:active {
+  transform: scale(0.92);
+}
+
+.seq-input-btn .card-img-placeholder {
+  font-size: 2.5rem;
+  margin-bottom: 4px;
+}
+
+/* CELEBRATION MODAL (KHEN NGỢI TÍCH CỰC) */
+.celebration-overlay {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(5px);
+  z-index: 40;
+  align-items: center;
+  justify-content: center;
+}
+
+.celebration-overlay.show {
+  display: flex;
+}
+
+.celebration-card {
+  background: #FFFFFF;
+  border-radius: var(--radius-xl);
+  padding: 36px 44px;
+  text-align: center;
+  border: 3px solid #BBF7D0;
+  box-shadow: 0 20px 40px rgba(34, 197, 94, 0.15);
+  animation: modal-pop 0.3s ease-out;
+}
+
+.star-animation {
+  font-size: 3.2rem;
+  margin-bottom: 12px;
+  animation: bounce-star 1s infinite alternate ease-in-out;
+}
+
+@keyframes bounce-star {
+  from { transform: translateY(0) scale(1); }
+  to { transform: translateY(-8px) scale(1.08); }
+}
+
+.celebration-title {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--success);
+  margin-bottom: 8px;
+}
+
+.celebration-text {
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+  font-weight: 600;
+}
