@@ -93,10 +93,10 @@
           </div>
         </div>
 
-        <!-- Nút Tùy chọn Bật/Tắt Quét Khối Màu Thực Tế Trên Tay -->
-        <button id="cameraToggleBtn" class="camera-toggle-btn" title="Chế độ quét khối mã màu thực tế trên tay (Tangible AI)">
+        <!-- Nút Tùy chọn Bật/Tắt Cử Chỉ Tay 3D -->
+        <button id="cameraToggleBtn" class="camera-toggle-btn" title="Điều khiển bằng cử chỉ bàn tay 3D qua Camera (AI MediaPipe)">
           <span>📷</span>
-          <span>Quét Khối Màu (Tangible AI)</span>
+          <span>Bật Cử Chỉ Tay 3D</span>
         </button>
 
         <!-- Âm thanh mẫu & Hướng dẫn lại -->
@@ -137,10 +137,9 @@
       <!-- KHÔNG GIAN BÀI HỌC TƯƠNG TÁC (GAME ARENA) -->
       <section class="game-arena" id="gameArena">
         
-        <!-- Banner hướng dẫn chế độ vật thể thực tế -->
-        <div id="tangibleGuideBanner" class="tangible-guide-banner">
-          <span class="tangible-guide-icon">🧸</span>
-          <span><strong>Chế độ Khối Màu Thực Tế:</strong> Bé chỉ cần nhặt Khối màu / Thẻ màu bên ngoài giơ vào ô ngắm camera để trả lời!</span>
+        <!-- Banner hướng dẫn cử chỉ tay 3D -->
+        <div id="aiGestureGuideBanner" class="ai-gesture-guide-banner">
+          <span>🖐️ <strong>Cử chỉ tay 3D:</strong> Đưa tay trước camera • <strong>Chụm 2 ngón tay 👌</strong> hoặc <strong>Giữ yên 1 giây</strong> để chọn thẻ bài!</span>
         </div>
 
         <!-- Hướng dẫn thị giác ngắn gọn -->
@@ -481,37 +480,24 @@
       </div>
     </main>
 
-    <!-- CỬA SỔ QUÉT VẬT THỂ MÃ MÀU TRÊN TAY (TANGIBLE PORTAL) -->
-    <div id="tangiblePortalOverlay" class="tangible-portal-overlay">
-      <div class="portal-header">
-        <span class="portal-title">
-          <span class="portal-live-dot"></span>
-          <span>Quét Khối Mã Màu Trên Tay</span>
-        </span>
-        <button id="closePortalBtn" class="portal-close-btn" title="Đóng">&times;</button>
+    <!-- CỬA SỔ XEM TRƯỚC CAMERA AI 3D KHUNG XƯƠNG -->
+    <div id="aiGesturePreviewBox" class="ai-gesture-preview-box">
+      <div class="ai-preview-header">
+        <div class="ai-status-pill">
+          <span id="aiStatusDot" class="ai-status-dot"></span>
+          <span id="aiStatusText">Đang tìm bàn tay...</span>
+        </div>
+        <button id="closeAiGestureBtn" class="ai-close-btn" title="Đóng">&times;</button>
       </div>
-      <div class="portal-video-wrapper">
-        <video id="portalVideoElem" class="portal-video-elem" playsinline autoplay muted></video>
-        <canvas id="portalCanvasElem" class="portal-canvas-elem"></canvas>
-        
-        <!-- Tâm ngắm giơ khối màu (Scan Crosshair) -->
-        <div id="scanTargetBox" class="scan-target-box">
-          <span class="scan-target-hint">Giơ khối màu vào đây</span>
-        </div>
-      </div>
-      
-      <!-- Thanh hiển thị trạng thái nhận diện -->
-      <div class="portal-status-bar">
-        <div class="detected-pill">
-          <span class="detected-label">Nhận diện:</span>
-          <span class="detected-color-tag">
-            <span id="detectedColorCircle" class="color-preview-circle"></span>
-            <span id="detectedColorText">Đang chờ khối màu...</span>
-          </span>
-        </div>
-        <div class="portal-progress-container">
-          <div id="portalProgressBar" class="portal-progress-bar"></div>
-        </div>
+      <video id="aiVideoFeed" class="ai-video-feed" playsinline autoplay muted></video>
+      <canvas id="aiSkeletonCanvas" class="ai-skeleton-canvas"></canvas>
+    </div>
+
+    <!-- CON TRỎ BÀN TAY ẢO AI 3D (CHỈ HIỂN THỊ KHI CÓ BÀN TAY THẬT) -->
+    <div id="virtualAiHandCursor" class="virtual-ai-hand-cursor">
+      <div class="cursor-dwell-ring"></div>
+      <div class="cursor-icon-wrapper">
+        <span id="cursorIconSymbol">🖐️</span>
       </div>
     </div>
 

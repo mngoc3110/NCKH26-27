@@ -1,372 +1,361 @@
 /**
  * ============================================================================
- * TANGIBLE COLOR OBJECT & HAND RECOGNITION (TUI ENGINE)
- * Trẻ cầm khối màu bên ngoài giơ lên trước Camera - Hệ thống tự biết đúng/sai
- * KHÔNG CẦN CHẠM MÀN HÌNH - KHÔNG CÒN CON TRỎ TRÔI LUNG TUNG - KHÁNG 100% QUẠT MÁY
+ * 3D AI HAND GESTURE & PINCH/DWELL INTERACTION CONTROLLER
+ * Sử dụng Google MediaPipe Hands nhận diện 21 khớp xương bàn tay 3D theo thời gian thực
+ * - KHÔNG CÓ BÀN TAY: ẨN HOÀN TOÀN CON TRỎ, TUYỆT ĐỐI KHÔNG TRÔI LUNG TUNG
+ * - CÓ BÀN TAY: Vẽ khung xương AI trực tiếp trên camera preview
+ * - CỬ CHỈ 1 (Pinch Click): Chụm ngón cái và ngón trỏ để Click tức thì
+ * - CỬ CHỈ 2 (Dwell Click): Giữ bàn tay trên thẻ bài 1 giây để Click tự động
+ * - Lọc rung (Anti-jitter smoothing & Deadzone) giúp con trỏ cực kỳ ổn định
  * ============================================================================
  */
 
-class TangibleColorController {
+class AiHandGestureController {
   constructor() {
     this.isActive = false;
-    this.stream = null;
+    this.hands = null;
+    this.cameraHelper = null;
     this.videoEl = null;
     this.canvasEl = null;
     this.ctx = null;
+    this.cursorEl = null;
+    this.cursorIconEl = null;
+    this.statusDotEl = null;
+    this.statusTextEl = null;
     this.toggleBtn = null;
+    this.previewBox = null;
     this.guideBanner = null;
 
-    // Các phần tử giao diện quét vật thể (HUD)
-    this.portalOverlay = null;
-    this.scanTargetBox = null;
-    this.detectedTextEl = null;
-    this.detectedColorCircle = null;
-    this.progressBarEl = null;
+    // Tọa độ làm mượt (Smoothing & Deadzone)
+    this.handX = window.innerWidth / 2;
+    this.handY = window.innerHeight / 2;
+    this.targetX = this.handX;
+    this.targetY = this.handY;
 
-    // Trạng thái nhận diện thời gian thực
-    this.detectedColor = null; // 'blue' | 'yellow' | 'green' | 'red' | null
-    this.holdingColor = null;
-    this.holdStartTime = 0;
-    this.holdDurationRequired = 800; // Giữ khối màu ổn định 0.8s để nộp bài
-    this.isTriggered = false;
+    // Quản lý Pinch Click (Chụm ngón tay)
+    this.isPinching = false;
+    this.lastPinchTime = 0;
+    this.pinchCooldownMs = 600;
 
-    // Vòng lặp camera
-    this.animFrameId = null;
+    // Quản lý Dwell Click (Giữ tay 1 giây)
+    this.dwellTargetEl = null;
+    this.dwellStartTime = 0;
+    this.dwellThresholdMs = 1000; // 1 giây
 
     this.initDOM();
   }
 
   initDOM() {
-    this.videoEl = document.getElementById('portalVideoElem');
-    this.canvasEl = document.getElementById('portalCanvasElem');
-    this.portalOverlay = document.getElementById('tangiblePortalOverlay');
-    this.scanTargetBox = document.getElementById('scanTargetBox');
-    this.detectedTextEl = document.getElementById('detectedColorText');
-    this.detectedColorCircle = document.getElementById('detectedColorCircle');
-    this.progressBarEl = document.getElementById('portalProgressBar');
+    this.videoEl = document.getElementById('aiVideoFeed');
+    this.canvasEl = document.getElementById('aiSkeletonCanvas');
+    this.cursorEl = document.getElementById('virtualAiHandCursor');
+    this.cursorIconEl = document.getElementById('cursorIconSymbol');
+    this.statusDotEl = document.getElementById('aiStatusDot');
+    this.statusTextEl = document.getElementById('aiStatusText');
+    this.previewBox = document.getElementById('aiGesturePreviewBox');
     this.toggleBtn = document.getElementById('cameraToggleBtn');
-    this.guideBanner = document.getElementById('tangibleGuideBanner');
-    const closeBtn = document.getElementById('closePortalBtn');
+    this.guideBanner = document.getElementById('aiGestureGuideBanner');
+    const closeBtn = document.getElementById('closeAiGestureBtn');
 
     if (this.canvasEl) {
-      this.ctx = this.canvasEl.getContext('2d', { willReadFrequently: true });
+      this.ctx = this.canvasEl.getContext('2d');
     }
 
     if (this.toggleBtn) {
-      this.toggleBtn.addEventListener('click', () => this.toggleCamera());
+      this.toggleBtn.addEventListener('click', () => this.toggleGestureMode());
     }
 
     if (closeBtn) {
-      closeBtn.addEventListener('click', () => this.stopCamera());
+      closeBtn.addEventListener('click', () => this.stopGestureMode());
     }
   }
 
-  async toggleCamera() {
+  async toggleGestureMode() {
     if (this.isActive) {
-      this.stopCamera();
+      this.stopGestureMode();
     } else {
-      await this.startCamera();
+      await this.startGestureMode();
     }
   }
 
-  async startCamera() {
+  async startGestureMode() {
     try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert('Trình duyệt hoặc thiết bị của bạn không hỗ trợ truy cập Camera!');
-        return;
-      }
-
-      this.stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 320 },
-          height: { ideal: 240 },
-          facingMode: 'user'
-        },
-        audio: false
-      });
-
-      this.videoEl.srcObject = this.stream;
-      await this.videoEl.play();
-
-      this.canvasEl.width = 320;
-      this.canvasEl.height = 240;
-
-      this.isActive = true;
-      this.isTriggered = false;
-      this.portalOverlay.classList.add('active');
-      
+      this.updateStatus('Đang khởi tạo AI...', 'loading');
+      if (this.previewBox) this.previewBox.classList.add('active');
+      if (this.guideBanner) this.guideBanner.classList.add('show');
       if (this.toggleBtn) {
         this.toggleBtn.classList.add('active');
-        this.toggleBtn.innerHTML = '<span>📷</span> <span>Tắt Quét Vật Thể</span>';
-      }
-      if (this.guideBanner) {
-        this.guideBanner.classList.add('show');
+        this.toggleBtn.innerHTML = '<span>📷</span> <span>Tắt Cử Chỉ Tay 3D</span>';
       }
 
-      // Ẩn vĩnh viễn con trỏ chuột trôi dạt cũ (nếu có)
-      const oldCursor = document.getElementById('virtualHandCursor');
-      if (oldCursor) oldCursor.style.display = 'none';
+      // 1. Đảm bảo thư viện Google MediaPipe Hands đã nạp xong
+      await this.ensureMediaPipeLoaded();
 
-      // Khởi động vòng lặp nhận diện vật thể màu bão hòa cao
-      this.processScanLoop();
-      console.log('[Tangible Engine] Đã kích hoạt quét vật thể mã màu trên tay');
+      // 2. Khởi tạo mô hình Google MediaPipe Hands AI
+      if (!this.hands) {
+        this.hands = new window.Hands({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+
+        this.hands.setOptions({
+          maxNumHands: 1,              // Chỉ bắt 1 bàn tay của trẻ/cô giáo
+          modelComplexity: 1,           // Độ chính xác cao
+          minDetectionConfidence: 0.65, // Ngưỡng tin cậy cao để loại bỏ hoàn toàn quạt/mặt
+          minTrackingConfidence: 0.65
+        });
+
+        this.hands.onResults((results) => this.onHandTrackingResults(results));
+      }
+
+      // 3. Khởi động Camera qua Camera Utils
+      if (!this.cameraHelper) {
+        this.cameraHelper = new window.Camera(this.videoEl, {
+          onFrame: async () => {
+            if (this.isActive && this.hands) {
+              await this.hands.send({ image: this.videoEl });
+            }
+          },
+          width: 320,
+          height: 240
+        });
+      }
+
+      await this.cameraHelper.start();
+      this.isActive = true;
+      this.updateStatus('Đang tìm bàn tay...', 'loading');
+      console.log('[MediaPipe Hands] Khởi động thành công camera cử chỉ tay 3D');
 
     } catch (err) {
-      console.warn('Lỗi mở Camera:', err);
-      alert('Không thể mở Camera. Vui lòng cấp quyền truy cập Camera cho trình duyệt!');
-      this.stopCamera();
+      console.error('Lỗi khởi động MediaPipe:', err);
+      alert('Không thể mở Camera AI. Vui lòng cấp quyền Camera trên trình duyệt và thử lại!');
+      this.stopGestureMode();
     }
   }
 
-  stopCamera() {
-    this.isActive = false;
-    cancelAnimationFrame(this.animFrameId);
+  // Đảm bảo MediaPipe scripts đã sẵn sàng
+  async ensureMediaPipeLoaded() {
+    let retries = 0;
+    while ((typeof window.Hands === 'undefined' || typeof window.Camera === 'undefined') && retries < 40) {
+      await new Promise(r => setTimeout(r, 150));
+      retries++;
+    }
+    if (typeof window.Hands === 'undefined' || typeof window.Camera === 'undefined') {
+      throw new Error('Không thể tải thư viện MediaPipe từ CDN');
+    }
+  }
 
-    if (this.stream) {
-      this.stream.getTracks().forEach(track => track.stop());
-      this.stream = null;
+  stopGestureMode() {
+    this.isActive = false;
+
+    if (this.cameraHelper) {
+      try { this.cameraHelper.stop(); } catch (e) {}
     }
 
-    if (this.portalOverlay) this.portalOverlay.classList.remove('active');
+    if (this.previewBox) this.previewBox.classList.remove('active');
+    if (this.guideBanner) this.guideBanner.classList.remove('show');
     if (this.toggleBtn) {
       this.toggleBtn.classList.remove('active');
-      this.toggleBtn.innerHTML = '<span>📷</span> <span>Bật Quét Vật Thể</span>';
-    }
-    if (this.guideBanner) {
-      this.guideBanner.classList.remove('show');
+      this.toggleBtn.innerHTML = '<span>📷</span> <span>Bật Cử Chỉ Tay 3D</span>';
     }
 
-    this.resetDetectionState();
+    // ẨN NGAY LẬP TỨC CON TRỎ ẢO
+    if (this.cursorEl) {
+      this.cursorEl.classList.remove('visible', 'dwelling', 'pinching');
+    }
+    this.dwellTargetEl = null;
+    this.updateStatus('Đã tắt', '');
   }
 
-  resetDetectionState() {
-    this.holdingColor = null;
-    this.holdStartTime = 0;
-    this.isTriggered = false;
-    if (this.progressBarEl) this.progressBarEl.style.width = '0%';
-    if (this.scanTargetBox) this.scanTargetBox.classList.remove('locked');
-    if (this.detectedTextEl) this.detectedTextEl.textContent = 'Đang chờ khối màu...';
-    if (this.detectedColorCircle) this.detectedColorCircle.style.backgroundColor = '#CBD5E1';
+  updateStatus(text, dotClass) {
+    if (this.statusTextEl) this.statusTextEl.textContent = text;
+    if (this.statusDotEl) {
+      this.statusDotEl.className = 'ai-status-dot ' + (dotClass || '');
+    }
   }
 
-  // VÒNG LẶP NHẬN DIỆN MÀU SẮC ĐỒ CHƠI / VẬT THỂ TRONG VÙNG TÂM NGẮM
-  processScanLoop() {
+  // XỬ LÝ KẾT QUẢ THEO DÕI 21 KHỚP XƯƠNG BÀN TAY (RESULTS CALLBACK)
+  onHandTrackingResults(results) {
     if (!this.isActive) return;
 
-    if (this.videoEl.readyState >= 2) {
-      const w = this.canvasEl.width;
-      const h = this.canvasEl.height;
+    const w = this.canvasEl.width;
+    const h = this.canvasEl.height;
 
-      // 1. Vẽ video vào canvas nội bộ
-      this.ctx.drawImage(this.videoEl, 0, 0, w, h);
+    // 1. Vẽ khung hình video lên canvas xem trước
+    this.ctx.clearRect(0, 0, w, h);
+    this.ctx.drawImage(this.videoEl, 0, 0, w, h);
 
-      // 2. Chỉ phân tích VÙNG TÂM NGẮM (Target Scan Zone: 40% trung tâm khung hình)
-      // Loại bỏ hoàn toàn 60% diện tích viền xung quanh (nơi có quạt máy, đèn trần, tường)
-      const boxW = Math.round(w * 0.45);
-      const boxH = Math.round(h * 0.45);
-      const startX = Math.round((w - boxW) / 2);
-      const startY = Math.round((h - boxH) / 2);
+    // 2. KIỂM TRA XEM CÓ BÀN TAY THẬT TRONG KHUNG HÌNH KHÔNG
+    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+      // === CÓ BÀN TAY THẬT ===
+      const landmarks = results.multiHandLandmarks[0];
 
-      const frameData = this.ctx.getImageData(startX, startY, boxW, boxH);
-      const data = frameData.data;
+      this.updateStatus('Đang bám bàn tay 🟢', 'tracking');
 
-      // Đếm số lượng pixel của 4 màu sắc bão hòa cao (Vật thể đồ chơi)
-      const colorVotes = {
-        red: 0,
-        yellow: 0,
-        green: 0,
-        blue: 0
-      };
+      // Vẽ toàn bộ 21 khớp xương và đường nối AI lên màn hình camera
+      this.renderHandSkeleton(landmarks, w, h);
 
-      for (let i = 0; i < data.length; i += 8) { // Bước 2 pixel để cực nhanh và mượt
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
+      // Điểm điều khiển: Đầu ngón tay trỏ (Landmark 8)
+      const indexTip = landmarks[8];
+      const thumbTip = landmarks[4];
 
-        const classified = this.classifyHighSaturationColor(r, g, b);
-        if (classified) {
-          colorVotes[classified]++;
-        }
+      // Ánh xạ tọa độ sang màn hình máy tính (Lật trục X vì camera là gương)
+      const normX = 1 - indexTip.x;
+      const normY = indexTip.y;
+
+      const newTargetX = normX * window.innerWidth;
+      const newTargetY = normY * window.innerHeight;
+
+      // Deadzone: Nếu khoảng cách di chuyển < 4px -> Giữ nguyên để chống rung tay
+      const deltaDist = Math.hypot(newTargetX - this.targetX, newTargetY - this.targetY);
+      if (deltaDist > 4) {
+        this.targetX = newTargetX;
+        this.targetY = newTargetY;
       }
 
-      // Tìm màu chiếm ưu thế lớn nhất trong ô tâm ngắm
-      const minRequiredPixels = Math.round((boxW * boxH) / 40); // Cần ít nhất ~5% diện tích là màu đậm
-      let dominantColor = null;
-      let maxCount = minRequiredPixels;
+      // Làm mượt chuyển động con trỏ (Exponential Smoothing)
+      this.handX += (this.targetX - this.handX) * 0.38;
+      this.handY += (this.targetY - this.handY) * 0.38;
 
-      for (const [col, count] of Object.entries(colorVotes)) {
-        if (count > maxCount) {
-          maxCount = count;
-          dominantColor = col;
-        }
+      // HIỂN THỊ CON TRỎ VÀ CẬP NHẬT TỌA ĐỘ
+      if (this.cursorEl) {
+        this.cursorEl.classList.add('visible');
+        this.cursorEl.style.left = `${this.handX}px`;
+        this.cursorEl.style.top = `${this.handY}px`;
       }
 
-      // Xử lý logic giữ yên để nộp bài
-      this.handleColorConfirmation(dominantColor);
+      // 3. NHẬN DIỆN CỬ CHỈ 1: CHỤM NGÓN TAY (PINCH CLICK)
+      // Khoảng cách giữa ngón cái (4) và ngón trỏ (8)
+      const pinchDist = Math.hypot(thumbTip.x - indexTip.x, thumbTip.y - indexTip.y);
+      const isNowPinching = pinchDist < 0.07;
+
+      if (isNowPinching) {
+        // Đang chụm 2 ngón tay lại
+        this.cursorEl.classList.add('pinching');
+        this.cursorIconEl.textContent = '👌';
+
+        const now = performance.now();
+        if (!this.isPinching && (now - this.lastPinchTime > this.pinchCooldownMs)) {
+          // KÍCH HOẠT PINCH CLICK TỨC THÌ!
+          this.lastPinchTime = now;
+          this.executeClickAtPosition(this.handX, this.handY, 'Pinch Click');
+        }
+        this.isPinching = true;
+        // Hủy Dwell nếu đang chụm
+        this.dwellTargetEl = null;
+        this.cursorEl.classList.remove('dwelling');
+
+      } else {
+        // Đang mở bàn tay bình thường
+        this.isPinching = false;
+        this.cursorEl.classList.remove('pinching');
+        this.cursorIconEl.textContent = '🖐️';
+
+        // 4. NHẬN DIỆN CỬ CHỈ 2: GIỮ YÊN TRÊN THẺ (DWELL CLICK 1 GIÂY)
+        this.checkDwellSelection(this.handX, this.handY);
+      }
+
+    } else {
+      // === HOÀN TOÀN KHÔNG CÓ BÀN TAY (HOẶC CHỈ CÓ QUẠT QUAY / MẶT NGƯỜI) ===
+      this.updateStatus('Đang chờ bàn tay... ⚪', 'loading');
+
+      // ẨN NGAY LẬP TỨC CON TRỎ ẢO! TUYỆT ĐỐI KHÔNG ĐỂ LƯU LẠI HOẶC TRÔI LUNG TUNG!
+      if (this.cursorEl) {
+        this.cursorEl.classList.remove('visible', 'dwelling', 'pinching');
+      }
+      this.dwellTargetEl = null;
     }
-
-    this.animFrameId = requestAnimationFrame(() => this.processScanLoop());
   }
 
-  // PHÂN LOẠI MÀU SẮC VẬT THỂ BẰNG KHÔNG GIAN MÀU HSV (LOẠI BỎ KHUÔN MẶT & ĐỒ GIA DỤNG)
-  classifyHighSaturationColor(r, g, b) {
-    const max = Math.max(r, g, b);
-    const min = Math.min(r, g, b);
-    const delta = max - min;
+  // Vẽ 21 khớp xương bàn tay AI
+  renderHandSkeleton(landmarks, w, h) {
+    // Các cặp nối xương bàn tay chuẩn MediaPipe
+    const connections = [
+      [0,1],[1,2],[2,3],[3,4],           // Ngón cái
+      [0,5],[5,6],[6,7],[7,8],           // Ngón trỏ
+      [5,9],[9,10],[10,11],[11,12],      // Ngón giữa
+      [9,13],[13,14],[14,15],[15,16],    // Ngón áp út
+      [13,17],[17,18],[18,19],[19,20],   // Ngón út
+      [0,17]                             // Lòng bàn tay
+    ];
 
-    // Nếu quá tối hoặc màu quá nhờn nhạt (S < 0.38) -> Bỏ qua (Khuôn mặt, tường, quạt đều bị loại bỏ ở đây!)
-    if (max < 65) return null; // Quá tối
-    const s = max === 0 ? 0 : delta / max;
-    if (s < 0.38) return null; // Độ bão hòa thấp (màu da người, tường nhà, quạt máy)
+    // Vẽ các đường xương màu xanh dạ quang
+    this.ctx.strokeStyle = '#38BDF8';
+    this.ctx.lineWidth = 3;
+    connections.forEach(([i, j]) => {
+      const p1 = landmarks[i];
+      const p2 = landmarks[j];
+      this.ctx.beginPath();
+      this.ctx.moveTo(p1.x * w, p1.y * h);
+      this.ctx.lineTo(p2.x * w, p2.y * h);
+      this.ctx.stroke();
+    });
 
-    // Tính góc Hue (0 đến 360 độ)
-    let h = 0;
-    if (delta !== 0) {
-      if (max === r) {
-        h = ((g - b) / delta) % 6;
-      } else if (max === g) {
-        h = (b - r) / delta + 2;
-      } else {
-        h = (r - g) / delta + 4;
-      }
-      h = Math.round(h * 60);
-      if (h < 0) h += 360;
+    // Vẽ 21 điểm mốc khớp ngón tay (Màu xanh lá tươi)
+    for (let i = 0; i < landmarks.length; i++) {
+      const pt = landmarks[i];
+      const x = pt.x * w;
+      const y = pt.y * h;
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, i === 8 ? 6 : 4, 0, Math.PI * 2);
+      this.ctx.fillStyle = i === 8 ? '#EF4444' : '#22C55E'; // Đầu ngón trỏ màu đỏ nổi bật
+      this.ctx.fill();
     }
-
-    // Phân loại dải màu đồ chơi đặc trưng:
-    // 1. MÀU ĐỎ (Red): 0 - 22 độ hoặc 335 - 360 độ
-    if ((h >= 0 && h <= 22) || (h >= 335 && h <= 360)) {
-      if (r > 110) return 'red';
-    }
-
-    // 2. MÀU VÀNG (Yellow): 35 - 68 độ (R và G đều cao, B thấp)
-    if (h >= 35 && h <= 68) {
-      if (r > 120 && g > 110) return 'yellow';
-    }
-
-    // 3. MÀU XANH LÁ (Green): 75 - 165 độ
-    if (h >= 75 && h <= 165) {
-      if (g > 90) return 'green';
-    }
-
-    // 4. MÀU XANH DƯƠNG (Blue): 180 - 255 độ
-    if (h >= 180 && h <= 255) {
-      if (b > 90) return 'blue';
-    }
-
-    return null;
   }
 
-  // XỬ LÝ XÁC NHẬN KHI TRẺ GIỮ KHỐI MÀU TRONG TÂM NGẮM
-  handleColorConfirmation(detectedCol) {
-    const colorNamesVi = {
-      blue: 'Xanh Dương 🔵',
-      yellow: 'Màu Vàng 🟡',
-      green: 'Xanh Lá 🟢',
-      red: 'Màu Đỏ 🔴'
-    };
+  // Kiểm tra giữ bàn tay trên thẻ bài (Dwell Selection 1 giây)
+  checkDwellSelection(x, y) {
+    this.cursorEl.style.display = 'none';
+    const hoveredEl = document.elementFromPoint(x, y);
+    this.cursorEl.style.display = 'flex';
 
-    if (detectedCol) {
-      const hex = window.colorSystem.getColorHex(detectedCol);
-      this.detectedTextEl.textContent = colorNamesVi[detectedCol];
-      this.detectedColorCircle.style.backgroundColor = hex;
-      this.scanTargetBox.classList.add('locked');
-      this.scanTargetBox.style.setProperty('--detected-color-hex', hex);
+    if (!hoveredEl) {
+      this.dwellTargetEl = null;
+      this.cursorEl.classList.remove('dwelling');
+      return;
+    }
 
-      if (this.holdingColor === detectedCol) {
-        // Tiếp tục giữ đúng màu này -> tăng thanh tiến trình
-        const elapsed = performance.now() - this.holdStartTime;
-        const progressPct = Math.min(100, Math.round((elapsed / this.holdDurationRequired) * 100));
-        this.progressBarEl.style.width = `${progressPct}%`;
-        this.progressBarEl.style.backgroundColor = hex;
+    const interactableCard = hoveredEl.closest('.option-card, .sorting-basket, .seq-input-btn, #nextCardBtn');
 
-        if (elapsed >= this.holdDurationRequired && !this.isTriggered) {
-          // HOÀN THÀNH: TỰ ĐỘNG NỘP BÀI VÀ KIỂM TRA ĐÚNG/SAI!
-          this.isTriggered = true;
-          this.submitAnswerWithColor(detectedCol);
+    if (interactableCard) {
+      if (this.dwellTargetEl === interactableCard) {
+        // Đang giữ tay trên thẻ
+        const elapsed = performance.now() - this.dwellStartTime;
+        if (elapsed >= this.dwellThresholdMs) {
+          // HOÀN TẤT DWELL: CLICK TỰ ĐỘNG!
+          this.dwellTargetEl = null;
+          this.cursorEl.classList.remove('dwelling');
+          this.executeClickAtPosition(x, y, 'Dwell Click (Giữ tay 1s)');
         }
       } else {
-        // Bắt đầu giơ màu mới
-        this.holdingColor = detectedCol;
-        this.holdStartTime = performance.now();
-        this.isTriggered = false;
-        this.progressBarEl.style.width = '10%';
+        // Mới di chuyển tới thẻ này
+        this.dwellTargetEl = interactableCard;
+        this.dwellStartTime = performance.now();
+        this.cursorEl.classList.add('dwelling');
       }
     } else {
-      // Khi không có khối màu nào trong ô tâm ngắm
-      this.holdingColor = null;
-      this.holdStartTime = 0;
-      this.progressBarEl.style.width = '0%';
-      this.scanTargetBox.classList.remove('locked');
-      this.detectedTextEl.textContent = 'Đang chờ khối màu...';
-      this.detectedColorCircle.style.backgroundColor = '#CBD5E1';
+      this.dwellTargetEl = null;
+      this.cursorEl.classList.remove('dwelling');
     }
   }
 
-  // KIỂM TRA ĐÁP ÁN THEO TRÒ CHƠI HIỆN TẠI VÀ CHUYỂN BÀI
-  submitAnswerWithColor(submittedColorKey) {
-    const activeGame = window.appState.activeGame;
+  // Thực hiện Click lên phần tử giao diện
+  executeClickAtPosition(x, y, reason = '') {
+    this.cursorEl.style.display = 'none';
+    const targetEl = document.elementFromPoint(x, y);
+    this.cursorEl.style.display = 'flex';
 
-    if (activeGame === 'matching') {
-      // Màn 1: Ghép cặp tương đồng
-      const targetCard = window.matchingGame.targetCard;
-      if (!targetCard) return;
+    if (!targetEl) return;
+    const clickable = targetEl.closest('.option-card, .sorting-basket, .seq-input-btn, #nextCardBtn, .btn');
 
-      if (submittedColorKey === targetCard.color) {
-        // ĐÚNG: Tìm thẻ đúng và tự động click
-        console.log('[Tangible Engine] Bé giơ đúng khối màu của thẻ:', submittedColorKey);
-        const correctCardEl = document.querySelector(`.option-card[data-card-id="${targetCard.id}"]`);
-        if (correctCardEl) {
-          correctCardEl.click();
-        }
-      } else {
-        // SAI: Âm thanh êm dịu nhắc nhở
-        console.log('[Tangible Engine] Chưa đúng mã màu:', submittedColorKey, 'Cần:', targetCard.color);
-        window.audioEngine.playGentleWrong();
-        window.researchLogger.recordError();
-        this.flashWrongBorder();
-      }
-
-    } else if (activeGame === 'sorting') {
-      // Màn 2: Phân loại danh mục theo khay
-      const currentItem = window.sortingGame.currentItem;
-      if (!currentItem) return;
-
-      if (submittedColorKey === currentItem.color) {
-        console.log('[Tangible Engine] Bé giơ đúng màu khay phân loại:', submittedColorKey);
-        const correctBasketEl = document.querySelector(`.sorting-basket[data-category-id="${currentItem.category}"]`);
-        if (correctBasketEl) {
-          correctBasketEl.click();
-        }
-      } else {
-        window.audioEngine.playGentleWrong();
-        window.researchLogger.recordError();
-        this.flashWrongBorder();
-      }
-
-    } else if (activeGame === 'sequence') {
-      // Màn 3: Chuỗi trí nhớ màu
-      console.log('[Tangible Engine] Bé nộp màu chuỗi trí nhớ:', submittedColorKey);
-      window.sequenceGame.handleUserColorInput(submittedColorKey);
+    if (clickable) {
+      console.log(`[AI Gesture] ${reason} thành công lên thẻ:`, clickable);
+      window.audioEngine.playHint();
+      clickable.click();
     }
-
-    // Sau 1.2s cho phép nhận diện tiếp
-    setTimeout(() => {
-      this.isTriggered = false;
-      this.holdingColor = null;
-      this.progressBarEl.style.width = '0%';
-    }, 1200);
-  }
-
-  flashWrongBorder() {
-    this.scanTargetBox.style.setProperty('--detected-color-hex', '#EF4444');
-    setTimeout(() => {
-      this.scanTargetBox.classList.remove('locked');
-    }, 400);
   }
 }
 
 // Khởi tạo Singleton
 document.addEventListener('DOMContentLoaded', () => {
-  window.tangibleColorController = new TangibleColorController();
+  window.aiHandGestureController = new AiHandGestureController();
 });

@@ -1,10 +1,14 @@
 /* ==========================================================================
-   COLORMIND ASD - TANGIBLE OBJECT & HAND COLOR RECOGNITION (TUI)
-   Nhận diện Bàn tay cầm Khối Mã Màu thực tế bên ngoài - Không cần chạm màn hình
-   Loại bỏ hoàn toàn con trỏ trôi lung tung và kháng 100% quạt máy/khuôn mặt
+   COLORMIND ASD - 3D AI HAND GESTURE & PINCH/DWELL CONTROLLER
+   Điều khiển cử chỉ bàn tay 3D không chạm bằng Google MediaPipe Hands
+   - Bắt chính xác 21 khớp xương bàn tay người
+   - Không có tay -> Ẩn con trỏ, không trôi lung tung
+   - Chụm 2 ngón tay (Pinch) -> Click tức thì
+   - Giữ tay trên thẻ (Dwell 1s) -> Click tự động
+   - Kháng 100% quạt máy và khuôn mặt
    ========================================================================== */
 
-/* Nút Bật/Tắt Camera trên thanh công cụ */
+/* Nút Bật/Tắt Cử chỉ tay trên thanh công cụ */
 .camera-toggle-btn {
   display: inline-flex;
   align-items: center;
@@ -23,211 +27,181 @@
   background: #EFF6FF;
   border-color: var(--primary);
   color: var(--primary);
-  box-shadow: 0 0 10px rgba(37, 99, 235, 0.2);
+  box-shadow: 0 0 12px rgba(37, 99, 235, 0.25);
 }
 
-/* CỬA SỔ QUÉT VẬT THỂ & CAMERA HUD (TANGIBLE SCAN PORTAL) */
-.tangible-portal-overlay {
+/* Cửa sổ xem trước Camera AI ở góc màn hình */
+.ai-gesture-preview-box {
   display: none;
   position: fixed;
   bottom: 24px;
   right: 24px;
-  width: 290px;
-  background: #FFFFFF;
+  width: 250px;
+  height: 190px;
+  background: #0F172A;
   border-radius: var(--radius-xl);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.18);
   border: 3px solid var(--primary);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.25);
   overflow: hidden;
   z-index: 1000;
   animation: modal-pop 0.3s ease-out;
 }
 
-.tangible-portal-overlay.active {
+.ai-gesture-preview-box.active {
   display: block;
 }
 
-.portal-header {
-  background: #1E293B;
-  color: #FFFFFF;
-  padding: 10px 14px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.portal-title {
-  font-size: 0.85rem;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.portal-live-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #22C55E;
-  animation: pulse-dot 1.2s infinite alternate;
-}
-
-.portal-close-btn {
-  background: none;
-  border: none;
-  color: #94A3B8;
-  font-size: 1.2rem;
-  cursor: pointer;
-}
-.portal-close-btn:hover { color: #FFFFFF; }
-
-/* Khu vực Video Camera có Khung Mục Tiêu (Target Crosshair) */
-.portal-video-wrapper {
-  position: relative;
-  width: 100%;
-  height: 180px;
-  background: #0F172A;
-  overflow: hidden;
-}
-
-.portal-video-elem {
+.ai-video-feed {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transform: scaleX(-1); /* Gương */
+  display: block;
 }
 
-.portal-canvas-elem {
+.ai-skeleton-canvas {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  transform: scaleX(-1);
+  transform: scaleX(-1); /* Gương khớp với video */
   pointer-events: none;
 }
 
-/* Vùng tâm ngắm giơ khối màu (Scan Crosshair Target) */
-.scan-target-box {
+.ai-preview-header {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 110px;
-  height: 110px;
-  border: 3px dashed rgba(255, 255, 255, 0.8);
-  border-radius: var(--radius-lg);
-  pointer-events: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.35); /* Làm mờ xung quanh để tập trung vào tâm */
-  transition: all 0.2s ease;
-}
-
-.scan-target-box.locked {
-  border-color: var(--detected-color-hex, #22C55E);
-  border-style: solid;
-  border-width: 4px;
-  box-shadow: 0 0 20px var(--detected-color-hex, #22C55E), 0 0 0 9999px rgba(15, 23, 42, 0.4);
-  transform: translate(-50%, -50%) scale(1.06);
-}
-
-.scan-target-hint {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #FFFFFF;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
-  text-align: center;
-  padding: 4px;
-}
-
-/* Bảng trạng thái nhận diện phía dưới */
-.portal-status-bar {
-  padding: 12px 14px;
-  background: #F8FAFC;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.detected-pill {
+  top: 8px;
+  left: 8px;
+  right: 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 12px;
-  background: #FFFFFF;
-  border: 2px solid var(--border-color);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.ai-status-pill {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(6px);
+  color: #FFFFFF;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 4px 10px;
   border-radius: var(--radius-full);
-}
-
-.detected-label {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  font-weight: 700;
-}
-
-.detected-color-tag {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 6px;
-  font-weight: 800;
-  font-size: 0.85rem;
-  color: var(--text-main);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 
-.color-preview-circle {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #CBD5E1;
-  border: 2px solid #FFFFFF;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-}
-
-/* Thanh tiến trình giữ vật thể để nộp bài (Hold to Submit Progress Bar) */
-.portal-progress-container {
-  width: 100%;
+.ai-status-dot {
+  width: 8px;
   height: 8px;
+  border-radius: 50%;
   background: #E2E8F0;
-  border-radius: var(--radius-full);
-  overflow: hidden;
 }
-
-.portal-progress-bar {
-  width: 0%;
-  height: 100%;
+.ai-status-dot.tracking {
   background: #22C55E;
-  transition: width 0.1s linear;
+  box-shadow: 0 0 8px #22C55E;
+  animation: pulse-dot 1s infinite alternate;
+}
+.ai-status-dot.loading {
+  background: #FACC15;
 }
 
-/* Banner hướng dẫn lớn trên màn hình chính */
-.tangible-guide-banner {
+.ai-close-btn {
+  pointer-events: auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.85);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ai-close-btn:hover { background: #DC2626; }
+
+/* CON TRỎ BÀN TAY ẢO (VIRTUAL HAND CURSOR) */
+.virtual-ai-hand-cursor {
+  display: none; /* MẶC ĐỊNH ẨN: CHỈ HIỂN THỊ KHI CÓ BÀN TAY THẬT */
+  position: fixed;
+  width: 56px;
+  height: 56px;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: transform 0.06s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.virtual-ai-hand-cursor.visible {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cursor-icon-wrapper {
+  font-size: 2.4rem;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+  transition: transform 0.15s ease, filter 0.15s ease;
+  position: relative;
+  z-index: 2;
+}
+
+/* Hiệu ứng khi chụm 2 ngón tay (Pinch Click) */
+.virtual-ai-hand-cursor.pinching .cursor-icon-wrapper {
+  transform: scale(0.85);
+  filter: drop-shadow(0 0 14px rgba(34, 197, 94, 0.8));
+}
+
+/* Vòng tròn đếm ngược khi giữ tay trên thẻ (Dwell Selection) */
+.cursor-dwell-ring {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 4px solid rgba(59, 130, 246, 0.2);
+  border-top-color: #2563EB;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+}
+
+.virtual-ai-hand-cursor.dwelling .cursor-dwell-ring {
+  opacity: 1;
+  transform: scale(1.15);
+  animation: dwell-spin 1s linear forwards;
+}
+
+@keyframes dwell-spin {
+  from { transform: scale(1.1) rotate(0deg); border-top-color: #3B82F6; }
+  to { transform: scale(1.25) rotate(360deg); border-top-color: #22C55E; }
+}
+
+/* Banner hướng dẫn cử chỉ tay trực quan */
+.ai-gesture-guide-banner {
   display: none;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  background: #FEF3C7;
-  border: 2px solid #FDE68A;
-  color: #92400E;
-  padding: 12px 24px;
+  background: #EFF6FF;
+  border: 2px solid #BFDBFE;
+  color: #1E40AF;
+  padding: 10px 22px;
   border-radius: var(--radius-full);
-  font-size: 1rem;
-  font-weight: 800;
+  font-size: 0.92rem;
+  font-weight: 700;
   margin-bottom: 20px;
   box-shadow: var(--shadow-sm);
-  animation: bounce-gentle 2s infinite alternate ease-in-out;
+  animation: modal-pop 0.25s ease-out;
 }
 
-.tangible-guide-banner.show {
+.ai-gesture-guide-banner.show {
   display: flex;
-}
-
-@keyframes bounce-gentle {
-  from { transform: translateY(0); }
-  to { transform: translateY(-4px); }
-}
-
-.tangible-guide-icon {
-  font-size: 1.5rem;
 }

@@ -2,6 +2,7 @@
  * ============================================================================
  * TEACHER CONTENT MANAGER (QUẢN TRỊ HỌC LIỆU NO-CODE)
  * Giúp giáo viên tự do thêm/xóa thẻ bài học liệu mà không cần phụ thuộc IT
+ * Sửa lỗi xóa thẻ: Dùng Event Delegation và xác nhận 2 chạm (không bị chặn pop-up)
  * ============================================================================
  */
 
@@ -35,6 +36,17 @@ class ContentManager {
     if (this.excelTplBtnEl) {
       this.excelTplBtnEl.addEventListener('click', () => this.downloadExcelTemplate());
     }
+
+    // Bắt sự kiện xóa bằng Event Delegation an toàn 100%
+    if (this.tableBodyEl) {
+      this.tableBodyEl.addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.delete-card-btn');
+        if (deleteBtn) {
+          const cardId = deleteBtn.dataset.cardId;
+          this.handleDeleteClick(cardId, deleteBtn);
+        }
+      });
+    }
   }
 
   renderCardsTable() {
@@ -42,7 +54,18 @@ class ContentManager {
     this.tableBodyEl.innerHTML = '';
     const cards = window.appState.cards;
 
-    cards.forEach((card, idx) => {
+    if (!cards || cards.length === 0) {
+      this.tableBodyEl.innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px">
+            Kho học liệu hiện đang trống. Cô hãy bấm nút "Thêm Thẻ Học Liệu Mới" để tạo bài!
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    cards.forEach((card) => {
       const tr = document.createElement('tr');
       const colorHex = window.colorSystem.getColorHex(card.color);
       const categoryNames = {
@@ -64,9 +87,11 @@ class ContentManager {
         </td>
         <td>Cấp ${card.difficulty || 1}</td>
         <td>
-          <button class="btn btn-outline" style="padding: 4px 10px; font-size: 0.8rem; color: #DC2626; border-color: #FECACA" 
-            onclick="window.contentManager.deleteCard('${card.id}')">
-            Xóa
+          <button class="btn btn-outline delete-card-btn" 
+            data-card-id="${card.id}"
+            style="padding: 5px 12px; font-size: 0.82rem; color: #DC2626; border-color: #FECACA; background: #FEF2F2;"
+            title="Bấm để xóa thẻ bài này">
+            🗑️ Xóa
           </button>
         </td>
       `;
@@ -91,7 +116,7 @@ class ContentManager {
     const color = document.getElementById('cardColorSelect').value;
 
     const newCard = {
-      id: 'c_' + Date.now().toString().slice(-5),
+      id: 'c_' + Date.now().toString().slice(-6),
       name: name,
       emoji: emoji,
       category: category,
@@ -105,15 +130,43 @@ class ContentManager {
     this.renderCardsTable();
     this.closeModal();
 
-    alert(`Đã thêm thành công thẻ "${name}" vào kho học liệu! Giáo viên có thể cho trẻ học ngay lập tức.`);
+    // Thông báo mềm
+    console.log(`Đã thêm thành công thẻ "${name}" vào kho học liệu!`);
   }
 
-  deleteCard(cardId) {
-    if (confirm('Cô có chắc chắn muốn xóa thẻ bài học liệu này không?')) {
+  // Cơ chế Xóa Thẻ 2 Chạm An Toàn (Không bao giờ bị trình duyệt chặn pop-up confirm)
+  handleDeleteClick(cardId, btnEl) {
+    if (btnEl.classList.contains('confirming-delete')) {
+      // Chạm lần 2: XÓA NGAY LẬP TỨC
       window.appState.cards = window.appState.cards.filter(c => c.id !== cardId);
       window.appState.saveCards();
       this.renderCardsTable();
+      console.log(`Đã xóa thẻ ID: ${cardId}`);
+    } else {
+      // Chạm lần 1: Đổi nút sang trạng thái xác nhận đỏ
+      btnEl.classList.add('confirming-delete');
+      btnEl.style.background = '#DC2626';
+      btnEl.style.color = '#FFFFFF';
+      btnEl.style.borderColor = '#DC2626';
+      btnEl.innerHTML = '⚠️ Xác nhận xóa?';
+
+      // Sau 3.5 giây nếu không bấm lại sẽ tự hủy để tránh xóa nhầm
+      setTimeout(() => {
+        if (document.body.contains(btnEl) && btnEl.classList.contains('confirming-delete')) {
+          btnEl.classList.remove('confirming-delete');
+          btnEl.style.background = '#FEF2F2';
+          btnEl.style.color = '#DC2626';
+          btnEl.style.borderColor = '#FECACA';
+          btnEl.innerHTML = '🗑️ Xóa';
+        }
+      }, 3500);
     }
+  }
+
+  deleteCard(cardId) {
+    window.appState.cards = window.appState.cards.filter(c => c.id !== cardId);
+    window.appState.saveCards();
+    this.renderCardsTable();
   }
 
   // Tải mẫu Excel để giáo viên nhập bài học hàng loạt
